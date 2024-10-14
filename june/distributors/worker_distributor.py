@@ -137,14 +137,14 @@ class WorkerDistributor:
         work_msoa_man_rv = rv_discrete(
             values=(
                 np.arange(0, len(wf_area_df.index.values)),
-                wf_area_df["n_man"].values,
+                wf_area_df["n_man_ratio"].values,
             )
         )
         self.work_msoa_man_rnd = work_msoa_man_rv.rvs(size=n_workers)
         work_msoa_woman_rv = rv_discrete(
             values=(
                 np.arange(0, len(wf_area_df.index.values)),
-                wf_area_df["n_woman"].values,
+                wf_area_df["n_woman_ratio"].values,
             )
         )
         self.work_msoa_woman_rnd = work_msoa_woman_rv.rvs(size=n_workers)
@@ -404,30 +404,29 @@ class WorkerDistributor:
 
 
 def load_workflow_df(
-    workflow_file: str = default_workflow_file, area_names: Optional[List[str]] = None
+    workflow_file: str, area_names: Optional[List[str]] = None
 ) -> pd.DataFrame:
-    wf_df = pd.read_csv(
-        workflow_file,
-        delimiter=",",
-        delim_whitespace=False,
-        skiprows=1,
-        usecols=[0, 1, 3, 4],
-        names=["super_area", "work_super_area", "n_man", "n_woman"],
-    )
+    # Load the CSV file directly
+    wf_df = pd.read_csv(workflow_file)
+
+    # Rename columns for consistency with the code
+    wf_df = wf_df.rename(columns={
+        "Area of residence": "super_area",
+        "Area of workplace": "work_super_area",
+        "Male": "n_man",
+        "Female": "n_woman",
+    })
+
+    # If area names are provided, filter by 'super_area'
     if area_names:
         wf_df = wf_df[wf_df["super_area"].isin(area_names)]
-    # convert into ratios
-    wf_df = wf_df.groupby(["super_area", "work_super_area"]).agg(
-        {"n_man": "sum", "n_woman": "sum"}
-    )
-    wf_df["n_man"] = (
-        wf_df.groupby(level=0)["n_man"].apply(lambda x: x / float(x.sum(axis=0))).values
-    )
-    wf_df["n_woman"] = (
-        wf_df.groupby(level=0)["n_woman"]
-        .apply(lambda x: x / float(x.sum(axis=0)))
-        .values
-    )
+
+    # Sum the values by 'super_area' and 'work_super_area' for men and women
+    wf_df = wf_df.groupby(["super_area", "work_super_area"])[["n_man", "n_woman"]].sum()
+
+    # Calculate the ratios for 'n_man' and 'n_woman'
+    wf_df['n_man_ratio'] = wf_df.groupby(level=0)['n_man'].apply(lambda x: x / x.sum())
+    wf_df['n_woman_ratio'] = wf_df.groupby(level=0)['n_woman'].apply(lambda x: x / x.sum())
     return wf_df
 
 
