@@ -20,7 +20,7 @@ sub_sector_distr:
 # home = work from home
 # bind = send to random SuperArea within simulated geography
 non_geographical_work_location:
-  OD0000001: "home"
-  OD0000002: "home"
-  OD0000003: "bind"
-  OD0000004: "bind"
+  OD0000001: "Home"
+  OD0000002: "Offshore"
+  OD0000003: "Not Fixed"
+  OD0000004: "Outside UK"

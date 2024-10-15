@@ -43,7 +43,7 @@ class AgeSexGenerator:
         ethnicity_age_bins are the lower edges of the age bins that ethnicity data is in
         ethnicity_groups are the labels of the ethnicities which we have data for.
         ethnicity_structure are (integer) ratios of the ethnicities, for each age bin. the sum
-        of this strucutre need NOT be the total number of people returned by the generator.
+        of this structure need NOT be the total number of people returned by the generator.
         Example:
             age_counts = [1, 2, 3] means 1 person of age 0, 2 people of age 1 and 3 people of age 2.
             sex_bins = [1, 3] defines two bins: (0,1) and (3, infinity)

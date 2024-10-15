@@ -88,6 +88,13 @@ class WorkerDistributor:
         self.company_closure = company_closure
         self._boundary_workers_counter = count()
         self.n_boundary_workers = 0
+        self.n_home = 0
+        self.n_offshore = 0
+        self.n_random = 0
+        self.n_not_fixed = 0
+        self.n_outside_uk = 0
+        self.n_Wales = 0
+        self.n_Scotland = 0
 
     def distribute(self, areas: Areas, super_areas: SuperAreas, population: Population):
         """
@@ -125,6 +132,13 @@ class WorkerDistributor:
             if i % 5000 == 0 and i != 0:
                 logger.info(f"Distributed workers in {i} areas of {len(self.areas)}")
         logger.info("Workers distributed.")
+        print(f"The number of people that work from home is {self.n_home}")
+        print(f"The number of people that work from offshore is {self.n_offshore}")
+        print(f"The number of people that work from another place is {self.n_random}")
+        print(f"The number of people that have no fixed work location is {self.n_not_fixed}")
+        print(f"The number of people that work outside the uk is {self.n_outside_uk}")
+        print(f"The number of people that work in Wales is {self.n_Wales}")
+        print(f"The number of people that work in Scotland is {self.n_Scotland}")
 
     def _work_place_lottery(
         self, area_name: str, wf_area_df: pd.DataFrame, n_workers: int
@@ -192,16 +206,31 @@ class WorkerDistributor:
             super_area.add_worker(person)
         except KeyError:
             if work_location in list(self.non_geographical_work_location):
-                if self.non_geographical_work_location[work_location] == "home":
+                if self.non_geographical_work_location[work_location] == "Home":
                     person.work_super_area = None
-                elif self.non_geographical_work_location[work_location] == "bind":
+                    self.n_home += 1
+                elif self.non_geographical_work_location[work_location] == "Offshore":
                     self._select_rnd_superarea(person)
+                    self.n_offshore += 1
+                elif self.non_geographical_work_location[work_location] == "Not Fixed":
+                    self._select_rnd_superarea(person)
+                    self.n_not_fixed += 1
+                elif self.non_geographical_work_location[work_location] == "Outside UK":
+                    self._select_rnd_superarea(person)
+                    self.n_outside_uk += 1
                 else:
                     raise KeyError(
                         f"Work location {work_location} not found in world's geogeraphy"
                     )
+            elif "W02" in work_location:
+                self._select_rnd_superarea(person)
+                self.n_Wales +=1
+            elif "S92" in work_location:
+                self._select_rnd_superarea(person)
+                self.n_Scotland +=1
             else:
                 self._select_rnd_superarea(person)
+                self.n_random += 1
 
     def _select_rnd_superarea(self, person: Person):
         """
@@ -210,7 +239,8 @@ class WorkerDistributor:
         idx = randint(0, len(self.super_areas) - 1)
         self.super_areas.members[idx].add_worker(person)
 
-    def _assign_work_sector(self, i: int, person: Person):
+    def _assign_work_sector(self, i: int, person:
+    Person):
         """
         Employ people in a given SuperArea.
         """

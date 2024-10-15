@@ -113,73 +113,74 @@ class CareHomeDistributor:
         """
         logger.info("Populating care homes")
         total_care_home_residents = 0
+
         for super_area in super_areas:
-            men_communal_residents = self.communal_men_by_super_area[super_area.name]
-            women_communal_residents = self.communal_women_by_super_area[
-                super_area.name
-            ]
-            communal_men_sorted = self._sort_dictionary_by_age_range_key(
-                men_communal_residents
+            communal_men_sorted, communal_women_sorted = self._get_sorted_communal_residents(super_area)
+            areas_with_care_homes = self._areas_with_care_homes(super_area)
+            areas_dicts = [self._create_people_dicts(area) for area in areas_with_care_homes]
+
+            total_care_home_residents += self._allocate_residents_to_care_homes(
+                areas_with_care_homes, areas_dicts, communal_men_sorted, communal_women_sorted
             )
-            communal_women_sorted = self._sort_dictionary_by_age_range_key(
-                women_communal_residents
-            )
-            areas_with_care_homes = [
-                area for area in super_area.areas if area.care_home is not None
-            ]
-            # now we need to choose from each area population which people go to the care home based on
-            # the super area statistics. Check who goes first.
-            shuffle(areas_with_care_homes)
-            areas_dicts = [
-                self._create_people_dicts(area) for area in areas_with_care_homes
-            ]
-            found_person = True
-            assert communal_men_sorted.keys() == communal_women_sorted.keys()
-            while found_person:
-                found_person = False
-                for i, area in enumerate(areas_with_care_homes):
-                    care_home = area.care_home
-                    if len(care_home.residents) < care_home.n_residents:
-                        # look for men first
-                        for age_range in communal_men_sorted:
-                            age1, age2 = list(map(int, age_range.split("-")))
-                            if communal_men_sorted[age_range] <= 0:
-                                if communal_women_sorted[age_range] <= 0:
-                                    continue
-                                # find woman
-                                person = self._find_person_in_age_range(
-                                    areas_dicts[i][1], age1, age2
-                                )
-                                if person is None:
-                                    continue
-                                care_home.add(person, care_home.SubgroupType.residents)
-                                communal_women_sorted[age_range] -= 1
-                                total_care_home_residents += 1
-                                found_person = True
-                                break
-                            person = self._find_person_in_age_range(
-                                areas_dicts[i][0], age1, age2
-                            )
-                            if person is None:
-                                # find woman
-                                person = self._find_person_in_age_range(
-                                    areas_dicts[i][1], age1, age2
-                                )
-                                if person is None:
-                                    continue
-                                care_home.add(person, care_home.SubgroupType.residents)
-                                communal_women_sorted[age_range] -= 1
-                                total_care_home_residents += 1
-                                found_person = True
-                                break
+
+        logger.info(f"This world has {total_care_home_residents} people living in care homes.")
+
+    def _get_sorted_communal_residents(self, super_area):
+        """Fetches and sorts communal residents for a given msoa"""
+        men_communal_residents = self.communal_men_by_super_area[super_area.name]
+        women_communal_residents = self.communal_women_by_super_area[super_area.name]
+
+        communal_men_sorted = self._sort_dictionary_by_age_range_key(men_communal_residents)
+        communal_women_sorted = self._sort_dictionary_by_age_range_key(women_communal_residents)
+
+        assert communal_men_sorted.keys() == communal_women_sorted.keys()
+        return communal_men_sorted, communal_women_sorted
+
+    def _areas_with_care_homes(self, super_area):
+        """Allocates residents from commmunal establishments to care homes."""
+        areas_with_care_homes = [area for area in super_area.areas if area.care_home is not None]
+        shuffle(areas_with_care_homes)
+        return areas_with_care_homes
+
+    def _allocate_residents_to_care_homes(self, areas_with_care_homes, areas_dicts, communal_men_sorted, communal_women_sorted):
+        total_care_home_residents = 0
+        found_person = True
+
+        while found_person:
+            found_person = False
+
+            for i, area in enumerate(areas_with_care_homes):
+                care_home = area.care_home
+                if len(care_home.residents) < care_home.n_residents:
+                    for age_range in communal_men_sorted:
+                        if communal_men_sorted[age_range] <= 0 and communal_women_sorted[age_range] <= 0:
+                            continue
+
+                        person = self._find_person_for_care_home(areas_dicts[i], age_range, communal_men_sorted, communal_women_sorted)
+
+                        if person:
                             care_home.add(person, care_home.SubgroupType.residents)
-                            communal_men_sorted[age_range] -= 1
                             total_care_home_residents += 1
                             found_person = True
                             break
-        logger.info(
-            f"This world has {total_care_home_residents} people living in care homes."
-        )
+
+        return total_care_home_residents
+
+    def _find_person_for_care_home(self, area_dict, age_range, communal_men_sorted, communal_women_sorted):
+        """Finds a person from the communal residents to add to the care home."""
+        men_dict, women_dict = area_dict
+        age1, age2 = list(map(int, age_range.split("-")))
+
+        if communal_men_sorted[age_range] > 0:
+            person = self._find_person_in_age_range(men_dict, age1, age2)
+            if person:
+                communal_men_sorted[age_range] -= 1
+                return person
+
+        person = self._find_person_in_age_range(women_dict, age1, age2)
+        if person:
+            communal_women_sorted[age_range] -= 1
+            return person
 
     def distribute_workers_to_care_homes(self, super_areas: SuperAreas):
         for super_area in super_areas:
