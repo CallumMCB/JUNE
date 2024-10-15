@@ -1,6 +1,6 @@
 import logging
 import yaml
-from random import shuffle, randint
+from random import shuffle, choice
 from collections import OrderedDict, defaultdict
 
 import numpy as np
@@ -72,38 +72,38 @@ class CareHomeDistributor:
         """
         Creates dictionaries with the men and women per age key living in the area.
         """
-        men_by_age = defaultdict(list)
-        women_by_age = defaultdict(list)
+        people_by_sex = {"m": defaultdict(list), "f": defaultdict(list)}
+
         for person in area.people:
-            if person.sex == "m":
-                men_by_age[person.age].append(person)
-            else:
-                women_by_age[person.age].append(person)
-        return men_by_age, women_by_age
+            people_by_sex[person.sex][person.age].append(person)
+
+        return people_by_sex["m"], people_by_sex["f"]
 
     def _find_person_in_age_range(self, people_by_age: dict, age_1, age_2):
-        available_people = []
-        for age in range(age_1, age_2 + 1):
-            available_people += people_by_age[age]
+        available_people = [person for age in range(age_1, age_2 + 1) for person in people_by_age.get(age, [])]
+
         if not available_people:
             return None
-        chosen_person_idx = randint(0, len(available_people) - 1)
-        chosen_person = available_people[chosen_person_idx]
+
+        chosen_person = choice(available_people)
+
+        # Remove the chosen person from the dictionary
         people_by_age[chosen_person.age].remove(chosen_person)
+
+        # Delete the age group if it's now empty
         if not people_by_age[chosen_person.age]:
             del people_by_age[chosen_person.age]
+
         return chosen_person
 
     def _sort_dictionary_by_age_range_key(self, d: dict):
         """
         Sorts a dictionary by decreasing order of the age range in the keys.
         """
-        ret = OrderedDict()
         ages = [age_range[0] for age_range in d.keys()]
         men_age_ranges_sorted = np.array(list(d.keys()))[np.argsort(ages)[::-1]]
-        for key in men_age_ranges_sorted:
-            ret[key] = d[key]
-        return ret
+
+        return OrderedDict((key, d[key]) for key in men_age_ranges_sorted)
 
     def populate_care_homes_in_super_areas(self, super_areas: SuperAreas):
         """
