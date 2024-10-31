@@ -1,0 +1,85 @@
+kid_max_age : 17
+student_min_age : 18
+student_max_age : 25
+old_min_age : 65
+old_max_age : 99
+adult_min_age : 18
+adult_max_age : 64
+young_adult_min_age : 18
+young_adult_max_age : 35
+max_age_to_be_parent : 64
+max_household_size : 8
+
+# >= is replaced by .5
+default_household_compositions:
+  "0 0 0 1":
+    labels: "One-person household: Aged 66 years and over"
+    composition: [0, 0, 0, 1]
+    household: "old"
+    size: 1
+
+  "0 0 1 0":
+    labels: "One-person household: Other"
+    composition: [0, 0, 1, 0]
+    household: "nokids"
+    size: 1
+
+  "0 0 0 2":
+    labels: "Single family household: All aged 66 years and over"
+    composition: [ 0, 0, 0, 2 ]
+    household: "old"
+    size: 2
+
+  "0 0 2 0":
+    labels: ["Single family household: Married or civil partnership couple: No children",
+      "Single family household: Cohabiting couple family: No children"]
+    composition: [ 0, 0, 2, 0 ]
+    household: "nokids"
+    size: 2
+
+  ">=1 >=0 2 0":
+    labels: ["Single family household: Married or civil partnership couple: Dependent children",
+      "Single family household: Cohabiting couple family: With dependent children"]
+    composition: [ 1.5, -1, 2, 0]
+    household: "family"
+    size: 3.5
+
+  "0 >=1 2 0":
+    labels: ["Single family household: Married or civil partnership couple: All children non-dependent",
+      "Single family household: Cohabiting couple family: All children non-dependent"]
+    composition: [ 0, 1.5, 2, 0]
+    household: "family"
+    size: 3.5
+
+  ">=1 >=0 1 0":
+    labels: "Single family household: Lone parent family: With dependent children"
+    composition: [1.5, -1, 1, 0]
+    household: "family"
+    size: 2.5
+
+  "0 >=1 1 0":
+    labels: "Single family household: Lone parent family: All children non-dependent"
+    composition: [0, 1.5, 1, 0]
+    household: "family"
+    size: 2.5
+
+  "0 >=0 >=0 >=1":
+    labels: "Other household types: Other related household: Other family composition"
+    composition: [0, -1, -1, 1.5]
+    household: "Other"
+    size: 1.5
+
+  ">=1 >=0 >=0 >=1":
+    labels: "Other household types: With dependent children"
+    composition: [1.5, -1, -1, 1.5]
+    household: "Other"
+    size: 2.5
+
+  "0 >=0 >=0 >=0":
+    labels: "Other household types: Other, including all full-time students and all aged 66 years and over"
+    composition: [0, -1, 0, -1]
+    household: "Other"
+    size: 1.5
+
+
+ignore_orphans: False
