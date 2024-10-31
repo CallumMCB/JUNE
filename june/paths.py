@@ -77,7 +77,7 @@ def path_for_name(name: str, look_in_package=True) -> Path:
 
 
 try:
-    data_path = path_for_name("data", look_in_package=True)
+    data_path = path_for_name("data_2021", look_in_package=True)
 except FileNotFoundError:
     answer = input(
         "I couldn't find any data folder, do you want me to download it for you? (y/N) "
@@ -87,6 +87,7 @@ except FileNotFoundError:
         with open(script_path, "rb") as file:
             script = file.read()
         rc = subprocess.call(script, shell=True)
-    data_path = path_for_name("data", look_in_package=True)
+    data_path = path_for_name("data_2021", look_in_package=True)
 
 configs_path = path_for_name("configs")
+

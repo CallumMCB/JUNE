@@ -185,19 +185,13 @@ class HouseholdDistributor:
             **kwargs,
         )
 
-
     def _refresh_random_numbers_list(self, n=1000) -> None:
         """
-        Samples one million age differences for couples and parents-kids. Sampling in batches makes the code much faster. They are converted to lists so they can be popped.
+        Samples random age differences for couples and parents-kids. Sampling in batches makes the code much faster. They are converted to lists so they can be popped.
         """
-        # create one million random age difference array to save time
         self._couples_age_differences_list = list(self._couples_age_rv.rvs(size=n))
-        self._first_kid_parent_age_diff_list = list(
-            self._first_kid_parent_age_diff_rv.rvs(size=n)
-        )
-        self._second_kid_parent_age_diff_list = list(
-            self._second_kid_parent_age_diff_rv.rvs(size=n)
-        )
+        self._first_kid_parent_age_diff_list = list(self._first_kid_parent_age_diff_rv.rvs(size=n))
+        self._second_kid_parent_age_diff_list = list(self._second_kid_parent_age_diff_rv.rvs(size=n))
         self._random_sex_list = list(self._random_sex_rv.rvs(size=2 * n))
 
     def _create_people_dicts(self, area: Area):
@@ -209,50 +203,37 @@ class HouseholdDistributor:
         for person in area.people:
             if person.residence is not None:
                 continue
-            if person.sex == "m":
-                men_by_age[person.age].append(person)
-            else:
-                women_by_age[person.age].append(person)
+            try:
+                if person.sex == 'm':
+                    men_by_age[person.age].append(person)
+                elif person.sex == 'f':
+                    women_by_age[person.age].append(person)
+                else:
+                    raise KeyError
+            except KeyError:
+                print(f"Unexpected sex value: {person.sex}")
         return men_by_age, women_by_age
 
     def distribute_people_and_households_to_areas(
-        self,
-        areas: List[Area],
-        number_households_per_composition_filename: str = default_household_composition_filename,
-        n_students_filename: str = default_number_students_filename,
-        n_people_in_communal_filename: str = default_number_communal_filename,
+            self,
+            areas: List[Area],
+            number_households_per_composition_filename: str = default_household_composition_filename,
+            n_students_filename: str = default_number_students_filename,
+            n_people_in_communal_filename: str = default_number_communal_filename,
     ):
         """
         Distributes households and people into households for the given areas list.
         The households are stored in area.households.
-
-        Parameters
-        ----------
-        areas
-            list of instances of Area
-        number_households_per_composition_filename
-            path to the data file containing the number of households per household composition per area
-        n_students_filename
-            path to file containing the number of students per area
-        n_people_in_communal_filename
-            path to file containing the number of people living in communal establishments per area
         """
         logger.info("Distributing people to households")
         area_names = [area.name for area in areas]
-        household_numbers_df = pd.read_csv(
-            number_households_per_composition_filename, index_col=0
-        ).loc[area_names]
-        n_students_df = pd.read_csv(n_students_filename, index_col=0).loc[area_names]
-        n_communal_df = pd.read_csv(n_people_in_communal_filename, index_col=0).loc[
-            area_names
-        ]
+        household_numbers_df, n_students_df, n_communal_df = self._load_area_data(
+            area_names, number_households_per_composition_filename, n_students_filename, n_people_in_communal_filename
+        )
+
         households_total = []
-        counter = 0
-        for area, (_, number_households), (_, n_students), (_, n_communal) in zip(
-            areas,
-            household_numbers_df.iterrows(),
-            n_students_df.iterrows(),
-            n_communal_df.iterrows(),
+        for counter, (area, (_, number_households), (_, n_students), (_, n_communal)) in enumerate(
+                zip(areas, household_numbers_df.iterrows(), n_students_df.iterrows(), n_communal_df.iterrows()), start=1
         ):
             men_by_age, women_by_age = self._create_people_dicts(area)
             area.households = self.distribute_people_to_households(
@@ -263,14 +244,19 @@ class HouseholdDistributor:
                 n_students.values[0],
                 n_communal.values[0],
             )
-            households_total += area.households
-            counter += 1
+            households_total.extend(area.households)
             if counter % 5000 == 0:
-                logger.info(f"filled {counter} areas of {len(area_names)}")
-        logger.info(
-            f"People assigned to households. There are {len(households_total)} households in this world."
-        )
+                logger.info(f"Filled {counter} areas out of {len(area_names)}")
+
+        logger.info(f"People assigned to households. There are {len(households_total)} households in this world.")
         return Households(households_total)
+
+    def _load_area_data(self, area_names, households_file, students_file, communal_file):
+        """Loads and filters the necessary data for the given areas."""
+        household_numbers_df = pd.read_csv(households_file, index_col=0).loc[area_names]
+        n_students_df = pd.read_csv(students_file, index_col=0).loc[area_names]
+        n_communal_df = pd.read_csv(communal_file, index_col=0).loc[area_names]
+        return household_numbers_df, n_students_df, n_communal_df
 
     def distribute_people_to_households(
         self,

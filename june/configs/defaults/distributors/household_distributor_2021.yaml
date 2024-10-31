@@ -63,19 +63,19 @@ default_household_compositions:
     household: "family"
     size: 2.5
 
-  "0 >=0 >=0 >=1":
+  "0 >=0 >=0 >=0":
     labels: "Other household types: Other related household: Other family composition"
-    composition: [0, -1, -1, 1.5]
-    household: "Other"
-    size: 1.5
-
-  ">=1 >=0 >=0 >=1":
-    labels: "Other household types: With dependent children"
-    composition: [1.5, -1, -1, 1.5]
+    composition: [0, -1, -1, -1]
     household: "Other"
     size: 2.5
 
-  "0 >=0 >=0 >=0":
+  ">=1 >=0 >=0 >=0":
+    labels: "Other household types: With dependent children"
+    composition: [1.5, -1, -1, -1]
+    household: "Other"
+    size: 2.5
+
+  "0 >=0 0 >=0":
     labels: "Other household types: Other, including all full-time students and all aged 66 years and over"
     composition: [0, -1, 0, -1]
     household: "Other"
