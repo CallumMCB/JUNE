@@ -6,6 +6,7 @@ test_june/unit/results/
 test_june/results/
 .idea/
 data/
+/data_2021/
 *__pycache__*
 *.ipynb_checkpoints*
 *.pyc
@@ -26,7 +27,7 @@ test_results
 .venv
 **/tester_*
 **/results/**
+Miniconda3-latest*
 
 post_checkpoint_results/
 pre_checkpoint_results
-/data_2021/
